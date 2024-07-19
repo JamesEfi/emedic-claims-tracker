@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMO Data Entry Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            display: grid;
+            gap: 10px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .edit-btn {
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .edit-btn:hover {
+            background-color: #007B9A;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HMO Data Entry Dashboard</h1>
+        <form id="hmoForm">
+            <input type="hidden" id="editIndex" value="">
+            <label for="sn">S/N:</label>
+            <input type="number" id="sn" required>
+
+            <label for="hmo">HMO:</label>
+            <select id="hmo" required>
+                <option value="">Select HMO</option>
+                <option value="Reliance">Reliance</option>
+                <option value="Precious Health">Precious Health</option>
+                <option value="Venus">Venus</option>
+                <option value="Novo Health">Novo Health</option>
+                <option value="Health Partners">Health Partners</option>
+                <option value="Axamansard">Axamansard</option>
+                <option value="Bastion Health">Bastion Health</option>
+                <option value="NEM Health">NEM Health</option>
+                <option value="Regenix HMO">Regenix HMO</option>
+                <option value="Occenic HMO">Occenic HMO</option>
+                <option value="Alleanza HMO">Alleanza HMO</option>
+                <option value="Mediplan">Mediplan</option>
+                <option value="Avon">Avon</option>
+                <option value="MB & O">MB & O</option>
+                <option value="Anchor">Anchor</option>
+                <option value="other">Add New HMO</option>
+            </select>
+            <input type="text" id="newHmo" placeholder="Enter new HMO name" style="display: none;">
+
+            <label for="claimMonth">Claim Month:</label>
+            <input type="month" id="claimMonth" required>
+
+            <label for="totalClaims">Total Number of Claims:</label>
+            <input type="number" id="totalClaims" required>
+
+            <label for="amountSubmitted">Claims Amount Submitted:</label>
+            <input type="number" id="amountSubmitted" step="0.01" required>
+
+            <label for="approvedAmount">Approved Amount:</label>
+            <input type="number" id="approvedAmount" step="0.01" required>
+
+            <label for="amountPaid">Claim Amount Paid:</label>
+            <input type="number" id="amountPaid" step="0.01">
+
+            <label for="reasonDisapproval">Reason for Disapproval (if any):</label>
+            <textarea id="reasonDisapproval" rows="3"></textarea>
+
+            <button type="submit" id="submitBtn">Submit</button>
+        </form>
+
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>S/N</th>
+                    <th>HMO</th>
+                    <th>Claim Month</th>
+                    <th>Total Claims</th>
+                    <th>Amount Submitted</th>
+                    <th>Approved Amount</th>
+                    <th>Amount Paid</th>
+                    <th>Amount Difference</th>
+                    <th>Reason for Disapproval</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const hmoSelect = document.getElementById('hmo');
+        const newHmoInput = document.getElementById('newHmo');
+        const form = document.getElementById('hmoForm');
+        const table = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+        const submitBtn = document.getElementById('submitBtn');
+        let editIndex = -1;
+
+        hmoSelect.addEventListener('change', function() {
+            if (this.value === 'other') {
+                newHmoInput.style.display = 'block';
+            } else {
+                newHmoInput.style.display = 'none';
+            }
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const sn = document.getElementById('sn').value;
+            let hmo = hmoSelect.value;
+            if (hmo === 'other') {
+                hmo = newHmoInput.value;
+                const option = document.createElement('option');
+                option.value = hmo;
+                option.textContent = hmo;
+                hmoSelect.insertBefore(option, hmoSelect.lastElementChild);
+            }
+            const claimMonth = document.getElementById('claimMonth').value;
+            const totalClaims = document.getElementById('totalClaims').value;
+            const amountSubmitted = parseFloat(document.getElementById('amountSubmitted').value);
+            const approvedAmount = parseFloat(document.getElementById('approvedAmount').value);
+            const amountPaid = document.getElementById('amountPaid').value ? parseFloat(document.getElementById('amountPaid').value) : 0;
+            const reasonDisapproval = document.getElementById('reasonDisapproval').value;
+            const amountDifference = (amountSubmitted - approvedAmount).toFixed(2);
+
+            if (editIndex === -1) {
+                // Add new row
+                const newRow = table.insertRow();
+                updateRow(newRow, sn, hmo, claimMonth, totalClaims, amountSubmitted, approvedAmount, amountPaid, amountDifference, reasonDisapproval);
+            } else {
+                // Update existing row
+                updateRow(table.rows[editIndex], sn, hmo, claimMonth, totalClaims, amountSubmitted, approvedAmount, amountPaid, amountDifference, reasonDisapproval);
+                editIndex = -1;
+                submitBtn.textContent = 'Submit';
+            }
+
+            form.reset();
+            newHmoInput.style.display = 'none';
+        });
+
+        function updateRow(row, sn, hmo, claimMonth, totalClaims, amountSubmitted, approvedAmount, amountPaid, amountDifference, reasonDisapproval) {
+            row.innerHTML = `
+                <td>${sn}</td>
+                <td>${hmo}</td>
+                <td>${claimMonth}</td>
+                <td>${totalClaims}</td>
+                <td>${amountSubmitted.toFixed(2)}</td>
+                <td>${approvedAmount.toFixed(2)}</td>
+                <td>${amountPaid.toFixed(2)}</td>
+                <td>${amountDifference}</td>
+                <td>${reasonDisapproval}</td>
+                <td><button class="edit-btn">Edit</button></td>
+            `;
+
+            row.querySelector('.edit-btn').addEventListener('click', function() {
+                editEntry(row);
+            });
+        }
+
+        function editEntry(row) {
+            const cells = row.cells;
+            document.getElementById('sn').value = cells[0].textContent;
+            document.getElementById('hmo').value = cells[1].textContent;
+            document.getElementById('claimMonth').value = cells[2].textContent;
+            document.getElementById('totalClaims').value = cells[3].textContent;
+            document.getElementById('amountSubmitted').value = cells[4].textContent;
+            document.getElementById('approvedAmount').value = cells[5].textContent;
+            document.getElementById('amountPaid').value = cells[6].textContent;
+            document.getElementById('reasonDisapproval').value = cells[8].textContent;
+
+            editIndex = row.rowIndex - 1;
+            submitBtn.textContent = 'Update';
+        }
+    </script>
+</body>
+</html>
